@@ -7,11 +7,11 @@ export interface ZoteroRawItem {
     creators?: any[];
     date?: string;
     note?: string;
+    extra?: string;
 }
 
 /** @public */
 export class ZoteroItem {
-
     raw: ZoteroRawItem;
 
     constructor(raw: ZoteroRawItem) {
@@ -23,7 +23,12 @@ export class ZoteroItem {
     }
 
     getTitle() {
-        return this.raw.title || this.raw.shortTitle || this.getNoteExcerpt() || '[No Title]';
+        return (
+            this.raw.title ||
+            this.raw.shortTitle ||
+            this.getNoteExcerpt() ||
+            '[No Title]'
+        );
     }
 
     getShortTitle() {
@@ -32,7 +37,7 @@ export class ZoteroItem {
 
     getAuthors() {
         return this.getCreators()
-            .filter(creator => creator.creatorType === 'author')
+            .filter((creator) => creator.creatorType === 'author')
             .map(this.normalizeName);
     }
 
@@ -45,14 +50,20 @@ export class ZoteroItem {
     }
 
     getDate() {
-        return this.raw.date ? this.formatDate(this.raw.date) : { year: null, month: null, day: null };
+        return this.raw.date
+            ? this.formatDate(this.raw.date)
+            : { year: null, month: null, day: null };
     }
 
     getNoteExcerpt() {
         if (this.raw.note) {
             const div = document.createElement('div');
             div.appendChild(sanitizeHTMLToDom(this.raw.note));
-            return (div.textContent || div.innerText || '').trim().substring(0, 50) + '...';
+            return (
+                (div.textContent || div.innerText || '')
+                    .trim()
+                    .substring(0, 50) + '...'
+            );
         }
 
         return '';
@@ -62,19 +73,17 @@ export class ZoteroItem {
         const names = {
             firstName: creator.firstName,
             lastName: creator.lastName,
-            fullName: ''
-        }
+            fullName: '',
+        };
 
         if (creator.hasOwnProperty('name')) {
             const delimiter = creator.name.lastIndexOf(' ');
             names.firstName = creator.name.substring(0, delimiter + 1).trim();
             names.lastName = creator.name.substring(delimiter).trim();
             names.fullName = creator.name;
-
         } else {
             names.fullName = `${names.firstName} ${names.lastName}`;
         }
-
 
         return names;
     }
@@ -89,8 +98,8 @@ export class ZoteroItem {
         return {
             year: dateObject.getFullYear(),
             month: dateObject.getMonth() + 1,
-            day: dateObject.getDate()
-        }
+            day: dateObject.getDate(),
+        };
     }
 
     getValues() {
@@ -102,5 +111,11 @@ export class ZoteroItem {
             authors: this.getAuthors(),
             firstAuthor: this.getAuthor(),
         };
+    }
+
+    getCitationKey() {
+        const extra = this.raw.extra || '';
+        const match = extra.match(/Citation Key:\s*(\S+)/);
+        return match ? match[1] : null;
     }
 }
